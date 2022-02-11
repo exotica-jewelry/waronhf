@@ -1,7 +1,5 @@
-# Project-specific
+# Build
 dist/
-build/
-src/styles/*.css
 
 # Trash
 $RECYCLE.BIN/

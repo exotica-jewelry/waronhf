@@ -1,17 +1,23 @@
 import options from './config.js'
 
+import yargs from 'yargs'
+const args = yargs(process.argv.slice(2)).argv
+
 import gulp from 'gulp'
+const { src, dest, watch, series, parallel } = gulp
+import gulpif from 'gulp-if'
 import babel from 'gulp-babel'
+
 import del from 'del'
 
 import browserSync from 'browser-sync'
 
+import minifyHTML from 'gulp-htmlmin'
+
 import dartSass from 'sass'
 import gulpSass from 'gulp-sass'
 const sass = gulpSass(dartSass)
-
-import minifyHTML from 'gulp-htmlmin'
-
+import sourcemaps from 'gulp-sourcemaps'
 import tailwindcss from 'tailwindcss'
 import autoprefixer from 'autoprefixer'
 import postcss from 'gulp-postcss'
@@ -23,31 +29,35 @@ import minifyJS from 'gulp-terser'
 import sharpResponsive from 'gulp-sharp-responsive'
 import replace from 'gulp-replace'
 
+import { cachekill } from 'cachekill'
+
 import logSymbols from 'log-symbols'
 
-// Browser previews (development)
-const server = browserSync.create()
-
-function livePreview(done) {
-  server.init({
-    server: {
-      baseDir: options.paths.dist.base,
-    },
-    port: options.config.port || 5000,
-  })
-  done()
+// --prod on the CLI sets production environment
+let PRODUCTION
+if (args.prod === true) {
+  PRODUCTION = true
+} else {
+  PRODUCTION = false
 }
 
-// Browser reloads
-function previewReload(done) {
-  console.log('\n\t' + logSymbols.info, 'Reloading browser preview.\n')
-  server.reload()
-  done()
+// --noop on the CLI prevents browserSync from opening a browser
+let HEADLESS
+if (args.noop === true) {
+  HEADLESS = true
+} else {
+  HEADLESS = false
 }
 
-// Modern image replacement
-const imageOptions = {
-  formats: [
+// Image formats and replacement
+//
+// Sharp should process jp(e)g, png, webp, gif, avif, heif, tiff
+// In practice, avif and heif source files are not recommended.
+const imageFormats = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'tiff']
+let imageOptions = {}
+
+if (options.config.modernImages) {
+  imageOptions.formats = [
     { width: 640, format: 'jpeg', rename: { suffix: '-sm' } },
     { width: 768, format: 'jpeg', rename: { suffix: '-md' } },
     { width: 1024, format: 'jpeg', rename: { suffix: '-lg' } },
@@ -57,9 +67,12 @@ const imageOptions = {
     { width: 640, format: 'avif', rename: { suffix: '-sm' } },
     { width: 768, format: 'avif', rename: { suffix: '-md' } },
     { width: 1024, format: 'avif', rename: { suffix: '-lg' } },
-  ],
-  includeOriginalFile: true,
+  ]
+} else {
+  imageOptions.formats = []
 }
+imageOptions.includeOriginalFile = true
+
 const imageMarkup = `
 <picture>
   <source srcset="$1-sm.avif" media="(max-width: 640px)" type="image/avif" />
@@ -75,218 +88,191 @@ const imageMarkup = `
 </picture>
 `
 
-//
-// Development tasks
-//
-
-function devHTML() {
-  return gulp
-    .src(`${options.paths.src.base}/**/*.html`)
-    .pipe(
-      replace(
-        /<img\s[^>]*?src\s*=\s*['\"]([^'\"\.]*?)\.([^'\"\.]*?)['\"][^>]*?>/g,
-        imageMarkup
-      )
-    )
-    .pipe(gulp.dest(options.paths.dist.base))
+// Cache busting
+const bustCache = (sourceFiles, done) => {
+  sourceFiles = `${sourceFiles}/**/*`
+  const targetFiles = `${options.paths.dist.base}/**/*.{js,css,html}`
+  const hashLength = 6
+  const rename = true
+  return cachekill(sourceFiles, targetFiles, hashLength, rename)
+  done()
 }
 
-function devStyles() {
-  return gulp
-    .src(`${options.paths.src.styles}/**/*.scss`)
-    .pipe(sass().on('error', sass.logError))
-    .pipe(concat({ path: '_generated.css' }))
-    .pipe(gulp.dest(options.paths.src.styles))
-    .pipe(postcss([tailwindcss(options.config.tailwindjs), autoprefixer]))
-    .pipe(concat({ path: 'styles.css' }))
-    .pipe(gulp.dest(options.paths.dist.styles))
+export const bustStylesCache = () => {
+  return bustCache(options.paths.dist.styles)
 }
 
-function devScripts(done) {
-  return [
-    gulp
-      .src([
-        `${options.paths.src.js}/lib/**/*.js`,
-        `${options.paths.src.js}/**/*.js`,
-        `!${options.paths.src.js}/vendor/**/*.js`,
-      ])
-      .pipe(concat({ path: 'scripts.js' }))
-      .pipe(gulp.dest(options.paths.dist.js)),
-    gulp
-      .src(`${options.paths.src.js}/vendor/*.js`)
-      .pipe(gulp.dest(options.paths.dist.js)),
-    done(),
-  ]
+export const bustScriptsCache = () => {
+  return bustCache(options.paths.dist.js)
 }
 
-function devImages() {
-  return gulp
-    .src(`${options.paths.src.img}/**/*`)
-    .pipe(sharpResponsive(imageOptions))
-    .pipe(gulp.dest(options.paths.dist.img))
+export const bustImagesCache = () => {
+  return bustCache(options.paths.dist.img)
 }
 
-function devFonts() {
-  return gulp
-    .src([
-      `${options.paths.src.fonts}/**/*`,
-      `!${options.paths.src.fonts}/**/*.md`,
-    ])
-    .pipe(gulp.dest(options.paths.dist.fonts))
+// Browser serving
+const server = browserSync.create()
+const serverOpts = {
+  server: {
+    baseDir: options.paths.dist.base,
+  },
+  port: options.config.port || 5000,
+}
+if (HEADLESS) {
+  serverOpts.open = false
 }
 
-function devRoot() {
-  return gulp
-    .src([
-      `${options.paths.src.rootFiles}/**/*`,
-      `!${options.paths.src.rootFiles}/README.md`,
-    ])
-    .pipe(gulp.dest(options.paths.dist.base))
+export const serve = (done) => {
+  server.init(serverOpts)
+  done()
 }
 
-function watchFiles() {
-  gulp.watch(
-    `${options.paths.src.base}/**/*.html`,
-    gulp.series(devHTML, devStyles, previewReload)
-  )
-  gulp.watch(
-    [options.config.tailwindjs, `${options.paths.src.styles}/**/*.scss`],
-    gulp.series(devStyles, previewReload)
-  )
-  gulp.watch(
-    `${options.paths.src.js}/**/*.js`,
-    gulp.series(devScripts, previewReload)
-  )
-  gulp.watch(
-    `${options.paths.src.img}/**/*`,
-    gulp.series(devImages, previewReload)
-  )
-  gulp.watch(
-    `${options.paths.src.fonts}/**/*`,
-    gulp.series(devFonts, previewReload)
-  )
-  gulp.watch(
-    `${options.paths.src.rootFiles}/**/*`,
-    gulp.series(devRoot, previewReload)
-  )
-  console.log('\n\t' + logSymbols.info, 'Watching for changes...\n')
+// Browser reloads
+export const reload = (done) => {
+  console.log('\n\t' + logSymbols.info, 'Reloading browser preview.\n')
+  server.reload()
+  done()
 }
 
-function devClean() {
+// Cleanup
+export const clean = () => {
   console.log('\n\t' + logSymbols.info, 'Cleaning generated files.\n')
   return del([options.paths.dist.base])
 }
 
-//
-// Production tasks
-//
-
-function prodHTML() {
-  return gulp
-    .src(`${options.paths.src.base}/**/*.html`)
+// HTML processing
+export const html = () => {
+  return src(`${options.paths.src.base}/**/*.html`)
     .pipe(
-      replace(
-        /<img\s[^>]*?src\s*=\s*['\"]([^'\"\.]*?)\.([^'\"\.]*?)['\"][^>]*?>/g,
-        imageMarkup
+      gulpif(
+        options.config.modernImages,
+        replace(
+          /<img\s[^>]*?src\s*=\s*['\"]([^'\"\.]*?)\.([^'\"\.]*?)['\"][^>]*?>/g,
+          imageMarkup
+        )
       )
     )
-    .pipe(minifyHTML({ collapseWhitespace: true }))
-    .pipe(gulp.dest(options.paths.build.base))
+    .pipe(gulpif(PRODUCTION, minifyHTML({ collapseWhitespace: true })))
+    .pipe(dest(options.paths.dist.base))
 }
 
-function prodStyles() {
-  return gulp
-    .src(`${options.paths.src.styles}/**/*.scss`)
+// Root files processing
+export const root = () => {
+  return src([
+    `${options.paths.src.rootFiles}/**/*`,
+    `!${options.paths.src.rootFiles}/README.md`,
+  ]).pipe(dest(options.paths.dist.base))
+}
+
+// Style processing
+export const styles = () => {
+  return src(`${options.paths.src.styles}/**/*.scss`)
+    .pipe(gulpif(!PRODUCTION, sourcemaps.init()))
     .pipe(sass().on('error', sass.logError))
-    .pipe(concat({ path: '_generated.css' }))
-    .pipe(gulp.dest(options.paths.src.styles))
+    .pipe(concat({ path: 'styles.temp.css' }))
     .pipe(postcss([tailwindcss(options.config.tailwindjs), autoprefixer]))
     .pipe(concat({ path: 'styles.css' }))
-    .pipe(minifyCSS({ compatibility: '*' }))
-    .pipe(gulp.dest(options.paths.build.styles))
+    .pipe(gulpif(PRODUCTION, minifyCSS({ compatibility: '*' })))
+    .pipe(gulpif(!PRODUCTION, sourcemaps.write()))
+    .pipe(dest(options.paths.dist.styles))
 }
 
-function prodScripts(done) {
-  // For minification options, see:
-  // https://github.com/terser/terser#minify-options
+// Script processing
+//
+// For minification options, see:
+// https://github.com/terser/terser#minify-options
+export const scripts = (done) => {
   return [
-    gulp
-      .src([
-        `${options.paths.src.js}/lib/**/*.js`,
-        `${options.paths.src.js}/**/*.js`,
-        `!${options.paths.src.js}/vendor/**/*.js`,
-      ])
+    src([
+      `${options.paths.src.js}/lib/**/*.js`,
+      `${options.paths.src.js}/**/*.js`,
+      `!${options.paths.src.js}/vendor/**/*.js`,
+    ])
       .pipe(concat({ path: 'scripts.js' }))
-      .pipe(minifyJS())
-      .pipe(gulp.dest(options.paths.build.js)),
-    gulp
-      .src(`${options.paths.src.js}/vendor/*.js`)
-      .pipe(minifyJS())
-      .pipe(gulp.dest(options.paths.build.js)),
+      .pipe(gulpif(PRODUCTION, minifyJS()))
+      .pipe(dest(options.paths.dist.js)),
+    src(`${options.paths.src.js}/vendor/*.js`)
+      .pipe(gulpif(PRODUCTION, minifyJS()))
+      .pipe(dest(options.paths.dist.js)),
     done(),
   ]
 }
 
-function prodImages() {
-  return gulp
-    .src(options.paths.src.img + '/**/*')
+// Image processing
+export const images = () => {
+  return src(`${options.paths.src.img}/**/*.{${imageFormats}}`)
     .pipe(sharpResponsive(imageOptions))
-    .pipe(gulp.dest(options.paths.build.img))
+    .pipe(dest(options.paths.dist.img))
 }
 
-function prodFonts() {
-  return gulp
-    .src([
-      `${options.paths.src.fonts}/**/*`,
-      `!${options.paths.src.fonts}/**/*.md`,
-    ])
-    .pipe(gulp.dest(options.paths.build.fonts))
+// Font processing
+export const fonts = () => {
+  return src([
+    `${options.paths.src.fonts}/**/*`,
+    `!${options.paths.src.fonts}/**/*.md`,
+  ]).pipe(dest(options.paths.dist.fonts))
 }
 
-function prodRoot() {
-  return gulp
-    .src([
-      `${options.paths.src.rootFiles}/**/*`,
-      `!${options.paths.src.rootFiles}/README.md`,
-    ])
-    .pipe(gulp.dest(options.paths.build.base))
+// Watch tasks
+export const watchFiles = () => {
+  console.log('\n\t' + logSymbols.info, 'Watching for changes...\n')
+  watch(
+    `${options.paths.src.base}/**/*.html`,
+    series(parallel(html, styles), reload)
+  )
+  watch(`${options.paths.src.rootFiles}/**/*`, series(root, reload))
+  watch(
+    [options.config.tailwindjs, `${options.paths.src.styles}/**/*.scss`],
+    series(styles, reload)
+  )
+  watch(`${options.paths.src.js}/**/*.js`, series(scripts, reload))
+  watch(`${options.paths.src.img}/**/*`, series(images, reload))
+  watch(`${options.paths.src.fonts}/**/*`, series(fonts, reload))
 }
 
-function prodClean() {
-  console.log('\n\t' + logSymbols.info, 'Cleaning generated files.\n')
-  return del([options.paths.build.base])
-}
-
-function prodFinish(done) {
+// Build notification
+export const complete = (done) => {
   console.log(
     '\n\t' + logSymbols.info,
-    `Production build complete at ${options.paths.build.base}\n`
-  )
-  done()
+    `Production build complete at ${options.paths.dist.base}\n`
+  ),
+    done()
 }
 
-//
-// Exports
-//
+// Gulp tasks
+let build
+if (!PRODUCTION) {
+  // dev
+  build = series(
+    clean,
+    parallel(styles, scripts, images, fonts, root, html),
+    serve,
+    watchFiles
+  )
+} else {
+  if (options.config.cacheBusting) {
+    // prod with cache-busting
+    build = series(
+      clean,
+      html,
+      parallel(
+        series(
+          parallel(scripts, styles, images),
+          series(bustScriptsCache, bustStylesCache, bustImagesCache)
+        ),
+        fonts,
+        root
+      ),
+      complete
+    )
+  } else {
+    // prod without cache-busting
+    build = series(
+      clean,
+      parallel(styles, scripts, images, fonts, root, html),
+      complete
+    )
+  }
+}
 
-const dev = gulp.series(
-  devClean,
-  gulp.parallel(devStyles, devScripts, devImages, devFonts, devRoot, devHTML),
-  livePreview,
-  watchFiles
-)
-
-const prod = gulp.series(
-  prodClean,
-  gulp.parallel(
-    prodStyles,
-    prodScripts,
-    prodImages,
-    prodFonts,
-    prodRoot,
-    prodHTML
-  ),
-  prodFinish
-)
-
-export { dev as default, prod }
+export default build

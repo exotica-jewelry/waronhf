@@ -2,6 +2,8 @@ export default {
   config: {
     tailwindjs: './tailwind.config.cjs',
     port: 9050,
+    modernImages: true,
+    cacheBusting: true,
   },
   paths: {
     root: './',
@@ -19,13 +21,6 @@ export default {
       js: './dist/js',
       img: './dist/img',
       fonts: './dist/fonts',
-    },
-    build: {
-      base: './build',
-      styles: './build/css',
-      js: './build/js',
-      img: './build/img',
-      fonts: './build/fonts',
     },
   },
 }
