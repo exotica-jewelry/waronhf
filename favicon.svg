@@ -1,0 +1,34 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="512"
+  height="512"
+  viewBox="0 0 135.467 135.467"
+  role="img"
+  aria-labelledby="symbol_title symbol_desc"
+  >
+  <title id="symbol_title">No HF</title>
+  <desc id="symbol_desc">War on hyrdofluoric acid (HF)</desc>
+  <style type="text/css">
+    <![CDATA[
+    .hf {
+      fill: #4827a5;
+    }
+    .strikethru {
+      fill: #dd4225;
+    }
+    @media (prefers-color-scheme: dark) {
+      .hf {
+        fill: #6633aa;
+      }
+      .strikethru {
+        fill: #990000;
+      }
+    }
+    ]]>
+  </style>
+  <path class="hf" role="presentation" d="M95.691 52.224l-.265 13.229h7.144l9.878-.265.794 1.058-.882 10.583-10.848-.265H95.25l-.088 3.087.529 18.256H81.316l.794-16.845-.794-40.04h35.631l.794 1.058-.97 10.583-13.758-.529zM68.616 79.652l.529 18.256H54.857l.706-16.845-.088-5.733-11.465-.088-10.142.265-.088 4.145.529 18.256H20.021l.706-16.845-.706-40.04h14.464l-.441 22.666 10.848.176 10.407-.176-.441-22.666H69.41z" fill="#4827a5"/>
+  <g class="strikethru" role="presentation" fill="#dd4225">
+    <path class="circle" aria-label="word" d="M67.732.832C30.855.832.832 30.857.832 67.735s30.023 66.9 66.9 66.9 66.902-30.023 66.902-66.9S104.61.832 67.732.832zm0 12.008c30.388 0 54.895 24.506 54.895 54.895s-24.506 54.893-54.895 54.893S12.84 98.123 12.84 67.735 37.344 12.84 67.732 12.84z" paint-order="normal"/>
+    <path class="strike" aria-label="word" d="M19.816 106.72l87.13-87.13 8.553 8.553-87.13 87.13z" paint-order="normal"/>
+  </g>
+</svg>
