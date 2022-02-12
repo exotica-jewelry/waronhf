@@ -152,26 +152,31 @@
         <!-- top navigation -->
         <nav class="relative">
           <div class="flex pb-8 px-4 lg:px-8 justify-between items-center">
-            <button class="p-2 navbar-burger" aria-label="Navigation">
-              <svg
-                class="w-10 h-3"
-                width="39"
-                height="13"
-                viewbox="0 0 39 13"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+            <div class="relative">
+              <button
+                class="fixed top-2 p-2 navbar-burger"
+                aria-label="Navigation"
               >
-                <rect width="39" height="2" rx="1" fill="#C4C4C4"></rect>
-                <rect
-                  x="19"
-                  y="11"
-                  width="20"
-                  height="2"
-                  rx="1"
-                  fill="#C4C4C4"
-                ></rect>
-              </svg>
-            </button>
+                <svg
+                  class="w-10 h-3"
+                  width="39"
+                  height="13"
+                  viewbox="0 0 39 13"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect width="39" height="2" rx="1" fill="#eee"></rect>
+                  <rect
+                    x="19"
+                    y="11"
+                    width="20"
+                    height="2"
+                    rx="1"
+                    fill="#eee"
+                  ></rect>
+                </svg>
+              </button>
+            </div>
             <div
               class="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2"
             >
@@ -216,11 +221,15 @@
               <p class="mb-6 lg:mb-12 text-lg text-white opacity-90">
                 Think HF is the only choice for cleaning and etching titanium?
               </p>
-              <p
-                class="mb-12 lg:mb-24 pb-2 text-2xl opacity-90 font-bold text-transparent bg-clip-text bg-gradient-to-br from-rose-500 to-red-800 text-shadow-sm"
+              <div
+                class="-ml-4 pt-3 px-4 bg-gradient-to-r from-gray-900 rounded-xl"
               >
-                Think again.
-              </p>
+                <p
+                  class="mb-12 lg:mb-24 pb-2 text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-rose-500 to-red-800 text-shadow-sm"
+                >
+                  Think again.
+                </p>
+              </div>
               <div class="flex flex-wrap items-center">
                 <a
                   class="inline-block mr-14 px-12 py-5 text-lg text-white font-bold bg-gradient-to-br from-blue-500 to-black rounded-full transition-bg"
