@@ -31,6 +31,14 @@
     }
   }
 
+  .rotate-r {
+    transform: rotate(90deg);
+  }
+
+  .rotate-none {
+    transform: rotate(0);
+  }
+
   // Zospace
 
   .bg-gradient-zospace-1 {
