@@ -69,4 +69,17 @@
     background: linear-gradient(145deg, #cecede, #fff);
     box-shadow: 6px 6px 18px #cccccc, -6px -6px 18px #fefefe;
   }
+
+  // Instances of the word 'hydrofluoric' have a soft hyphen in them. At small
+  // screen widths, we tell browsers to only break at the soft hyphen. At large
+  // screen widdths, we tell browsers to ignore the soft hyphen and keep the
+  // word together. The breakpoint matches the 'lg' Tailwinds breakpoint.
+  // https://developer.mozilla.org/en-US/docs/Web/CSS/hyphens
+  .hf {
+    hyphens: manual;
+
+    @media (min-width: 1024px) {
+      hyphens: none;
+    }
+  }
 }
