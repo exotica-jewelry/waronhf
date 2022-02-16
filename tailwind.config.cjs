@@ -8,8 +8,8 @@ module.exports = {
     },
     fontSize: {
       xxs: ['0.875rem', '1.25rem'],
-      xs: ['1rem', '1.5rem'],
-      sm: ['1.125rem', '1.75rem'],
+      xs: ['1rem', '1.333rem'],
+      sm: ['1.125rem', '1.5rem'],
       base: ['1.25rem', '1.825rem'],
       lg: ['1.5rem', '2rem'],
       xl: ['1.875rem', '2.25rem'],
@@ -37,5 +37,8 @@ module.exports = {
       print: { raw: 'print' },
     },
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: [
+    require('@tailwindcss/typography'),
+    require('tailwindcss-textshadow'),
+  ],
 }
