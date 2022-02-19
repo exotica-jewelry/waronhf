@@ -40,6 +40,8 @@ jobs:
       - name: Report broken links
         uses: urlstechie/urlchecker-action@master
         with:
+          # A subfolder or path to navigate to in the present or cloned repository
+          subfolder: dist
           # A comma-separated list of file types to cover in the URL checks
           file_types: .md,.html
           # The timeout seconds to provide to requests, defaults to 5 seconds
