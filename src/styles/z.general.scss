@@ -21,16 +21,6 @@
     }
   }
 
-  .flippy {
-    transition: transform 0.8s;
-
-    &:hover,
-    &:focus,
-    &:active {
-      transform: rotate(-10deg) translateX(-1rem) translateY(0.5rem) scale(1.2);
-    }
-  }
-
   .rotate-r {
     transform: rotate(90deg);
   }
@@ -65,6 +55,33 @@
 }
 
 @layer components {
+  .feature-card {
+    @apply duration-500;
+
+    > span {
+      @apply bg-current;
+      @apply rounded-lg;
+      @apply duration-500;
+
+      svg {
+        transform: scale(2);
+        overflow: visible;
+        stroke: white;
+        fill: transparent;
+      }
+    }
+
+    &:hover {
+      @apply shadow-xl;
+      @apply shadow-current;
+
+      > span {
+        @apply shadow-md;
+        @apply shadow-black;
+      }
+    }
+  }
+
   .tablet {
     background: linear-gradient(145deg, #cecede, #fff);
     box-shadow: 6px 6px 18px #cccccc, -6px -6px 18px #fefefe;
